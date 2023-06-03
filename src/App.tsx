@@ -34,19 +34,19 @@ const App: React.FC = () => {
   const countries = useQuery<Countries>(LIST_COUNTRIES, {
     variables: {
       filter:
-        searchType === "country"
+        searchType === "currency"
           ? {
-              code: countryCode //
-                ? { regex: "^" + countryCode.toUpperCase() }
-                : { ne: "" },
+              ...(currency && {
+                currency: { regex: "^" + currency.toUpperCase() },
+              }),
+              ...(continentCode && {
+                continent: { eq: continentCode }, //
+              }),
             }
           : {
-              currency: currency //
-                ? { regex: "^" + currency.toUpperCase() }
-                : { ne: "" },
-              continent: continentCode //
-                ? { eq: continentCode }
-                : { ne: "" },
+              ...(countryCode && {
+                code: { regex: "^" + countryCode.toUpperCase() },
+              }),
             },
     },
   });
