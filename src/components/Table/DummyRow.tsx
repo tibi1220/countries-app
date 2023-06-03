@@ -1,9 +1,5 @@
 import MyRow from "./MyRow";
 
-const DummyRow = () => (
-  <MyRow
-    country={{ name: "", code: "", emoji: "", currency: "", capital: "" }}
-  />
-);
+const DummyRow = () => <MyRow />;
 
 export default DummyRow;

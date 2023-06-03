@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import MyRow from "./MyRow";
 import DummyRow from "./DummyRow";
 import {
@@ -12,17 +12,17 @@ import {
   TableBody,
   Paper,
 } from "@mui/material";
-
-import type { StateProps } from "../../App";
+import { OperationVariables, QueryResult } from "@apollo/client";
+import { Countries } from "../../types";
 
 interface Props {
   rowCount: number;
-  data: StateProps;
+  countries: QueryResult<Countries, OperationVariables>;
 }
 
 const MyTable: React.FC<Props> = ({
   rowCount,
-  data: { error, data, display },
+  countries: { error, data, loading, previousData },
 }) => {
   const [page, setPage] = useState(1);
 
@@ -30,43 +30,50 @@ const MyTable: React.FC<Props> = ({
     setPage(value);
   };
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     setPage(1);
   }, [data]);
 
+  const pageCount = data ? Math.ceil(data.countries.length / rowCount) : 0;
+
+  const countries = loading ? previousData?.countries : data?.countries;
+
   const rows = useMemo(() => {
-    const arr: Array<JSX.Element> = [];
-
-    for (let i = (page - 1) * rowCount; i < page * rowCount; i++) {
-      arr.push(
-        i < data.length ? (
-          <MyRow key={i} country={data[i]} />
-        ) : (
-          <DummyRow key={i} />
-        )
-      );
-    }
-
-    return arr;
-  }, [rowCount, page, data]);
-
-  const pageCount = useMemo(() => {
-    return Math.ceil(data.length / rowCount);
-  }, [data.length, rowCount]);
+    return countries?.length
+      ? [
+          ...countries
+            .slice((page - 1) * rowCount, page * rowCount)
+            .map(country => <MyRow key={country.code} {...country} />),
+          ...(page === pageCount
+            ? Array.from(
+                Array(rowCount - (countries.length % rowCount)),
+                (_e, i) => <DummyRow key={`filler-${i}`} />
+              )
+            : []),
+        ]
+      : Array.from(Array(rowCount), (_e, i) => <DummyRow key={`empty-${i}`} />);
+  }, [countries, page]);
 
   if (error) return null;
 
   return (
     <>
-      <TableContainer sx={{ opacity: display ? 1 : 0.5 }} component={Paper}>
+      <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Country</TableCell>
-              <TableCell align="right">Code</TableCell>
-              <TableCell align="right">Capital</TableCell>
-              <TableCell align="right">Flag</TableCell>
-              <TableCell align="right">Currency</TableCell>
+              <TableCell width="15%" align="left">
+                Code
+              </TableCell>
+              <TableCell width="40%" align="left">
+                Country
+              </TableCell>
+              <TableCell width="30%" align="right">
+                Capital
+              </TableCell>
+              <TableCell width="15%" align="right">
+                Currency
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>{rows}</TableBody>

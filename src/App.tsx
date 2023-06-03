@@ -1,23 +1,54 @@
-import React, { useState } from "react";
+import React from "react";
 
+import { useFormik } from "formik";
+import { useQuery } from "@apollo/client";
 import { Paper, Typography, Box, Divider } from "@mui/material";
 
 import MyForm from "./components/Form/MyForm";
 import MyTable from "./components/Table/MyTable";
 
-import type { Country } from "./types";
+import { LIST_CONTINENTS, LIST_COUNTRIES } from "./client/queries";
 
-export type StateProps = {
-  data: Array<Country>;
-  error: boolean;
-  display: boolean;
+import type { Countries, ShortContinents } from "./types";
+
+export type FormValues = {
+  searchType: "country" | "currency";
+  continentCode: string | null;
+  currency: string;
+  countryCode: string;
+};
+
+const initialValues: FormValues = {
+  searchType: "currency",
+  continentCode: null,
+  currency: "",
+  countryCode: "",
 };
 
 const App: React.FC = () => {
-  const [data, setData] = useState<StateProps>({
-    data: [],
-    error: false,
-    display: false,
+  const formik = useFormik<FormValues>({ initialValues, onSubmit: () => {} });
+
+  const { searchType, countryCode, currency, continentCode } = formik.values;
+
+  const continents = useQuery<ShortContinents>(LIST_CONTINENTS);
+  const countries = useQuery<Countries>(LIST_COUNTRIES, {
+    variables: {
+      filter:
+        searchType === "country"
+          ? {
+              code: countryCode //
+                ? { regex: "^" + countryCode.toUpperCase() }
+                : { ne: "" },
+            }
+          : {
+              currency: currency //
+                ? { regex: "^" + currency.toUpperCase() }
+                : { ne: "" },
+              continent: continentCode //
+                ? { eq: continentCode }
+                : { ne: "" },
+            },
+    },
   });
 
   return (
@@ -38,13 +69,13 @@ const App: React.FC = () => {
           Country Finder
         </Typography>
 
-        <Divider />
-
-        <MyForm setData={setData} />
+        <MyForm formik={formik} continents={continents} />
 
         <Divider />
 
-        <MyTable rowCount={20} data={data} />
+        <MyTable rowCount={20} countries={countries} />
+
+        <Divider />
       </Paper>
     </Box>
   );
