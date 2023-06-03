@@ -30,29 +30,27 @@ const MyTable: React.FC<Props> = ({
     setPage(value);
   };
 
-  useEffect(() => {
-    setPage(1);
-  }, [data]);
-
   const pageCount = data ? Math.ceil(data.countries.length / rowCount) : 0;
 
-  const countries = loading ? previousData?.countries : data?.countries;
+  const countriesToUse = loading ? previousData?.countries : data?.countries;
 
   const rows = useMemo(() => {
-    return countries?.length
-      ? [
-          ...countries
-            .slice((page - 1) * rowCount, page * rowCount)
-            .map(country => <MyRow key={country.code} {...country} />),
-          ...(page === pageCount
-            ? Array.from(
-                Array(rowCount - (countries.length % rowCount)),
-                (_e, i) => <DummyRow key={`filler-${i}`} />
-              )
-            : []),
-        ]
-      : Array.from(Array(rowCount), (_e, i) => <DummyRow key={`empty-${i}`} />);
-  }, [countries, page]);
+    const countries = countriesToUse || [];
+
+    return [
+      ...countries.map(country => <MyRow key={country.code} {...country} />),
+      ...Array.from(
+        Array(rowCount - (countries.length % rowCount)),
+        (_e, i) => <DummyRow key={`filler-${i}`} />
+      ),
+    ];
+  }, [rowCount, countriesToUse]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [rows]);
+
+  const displayRows = rows.slice((page - 1) * rowCount, page * rowCount);
 
   if (error) return null;
 
@@ -76,7 +74,7 @@ const MyTable: React.FC<Props> = ({
               </TableCell>
             </TableRow>
           </TableHead>
-          <TableBody>{rows}</TableBody>
+          <TableBody>{displayRows}</TableBody>
         </Table>
       </TableContainer>
 
